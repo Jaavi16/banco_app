@@ -7,7 +7,7 @@ sudo systemctl enable httpd
 
 cd /var/www/html/
 # Github
-git clone https://github.com/tu_usuario/tu_repositorio_publico.git banco_app
+git clone https://github.com/tu_usuario/tu_repositorio.git banco_app
 
 # Permisos
 sudo usermod -a -G apache ec2-user
@@ -16,7 +16,7 @@ sudo chmod 2775 /var/www
 find /var/www -type d -exec sudo chmod 2775 {} \;
 find /var/www -type f -exec sudo chmod 0664 {} \;
 
-# Zona horaria (opcional)
+# Zona horaria
 sudo timedatectl set-timezone Europe/Madrid
 
 # Página
