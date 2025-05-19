@@ -20,8 +20,8 @@ find /var/www -type f -exec sudo chmod 0664 {} \;
 sudo timedatectl set-timezone Europe/Madrid
 
 # Página
-echo '<?php phpinfo(); ?>' > /var/www/html/banco_simple_app/info.php
-echo '<h1>¡Hola desde mi aplicación bancaria en AWS!</h1>' > /var/www/html/banco_simple_app/index.html
+echo '<?php phpinfo(); ?>' > /var/www/html/banco_app/info.php
+echo '<h1>¡Hola desde mi aplicación bancaria en AWS!</h1>' > /var/www/html/banco_app/index.html
 
 echo "Servidor web Apache con PHP y aplicación descargada desde Git."
 echo "***********************************************************************"
