@@ -7,7 +7,7 @@ sudo systemctl enable httpd
 
 cd /var/www/html/
 # Github
-git clone https://github.com/tu_usuario/tu_repositorio_publico.git banco_simple_app
+git clone https://github.com/tu_usuario/tu_repositorio_publico.git banco_app
 
 # Permisos
 sudo usermod -a -G apache ec2-user
