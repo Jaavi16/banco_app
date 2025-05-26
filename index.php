@@ -4,18 +4,21 @@
 $db_host = 'TU_DIRECCION_IP_RDS';
 $db_name = 'nombre_de_la_base_de_datos';
 $db_user = 'nombre_de_usuario_bd';
-$db_pass = 'contraseña_bd';
+$db_pass = 'contraseña_bd'; 
 
+$pdo = null; // Inicializar PDO a null
 try {
     $pdo = new PDO("mysql:host=$db_host;dbname=$db_name;charset=utf8", $db_user, $db_pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    die("Error al conectar a la base de datos: " . $e->getMessage());
+    // Error
+    $db_error_message = "Error al conectar a la base de datos: " . $e->getMessage();
 }
 
-// Funciones básicas del banco 
+// Funciones del banco
 
 function obtenerSaldo($pdo, $cuenta_id) {
+    if (!$pdo) return false; // Si PDO no se conectó, no intentes DB ops
     $stmt = $pdo->prepare("SELECT saldo FROM cuentas WHERE id = :id");
     $stmt->bindParam(':id', $cuenta_id);
     $stmt->execute();
@@ -24,6 +27,7 @@ function obtenerSaldo($pdo, $cuenta_id) {
 }
 
 function realizarTransferencia($pdo, $cuenta_origen_id, $cuenta_destino_id, $cantidad) {
+    if (!$pdo) return "Error: No hay conexión a la base de datos."; // Si PDO no se conectó
     $pdo->beginTransaction();
     try {
         // Verificar si las cuentas existen
@@ -69,67 +73,179 @@ function realizarTransferencia($pdo, $cuenta_origen_id, $cuenta_destino_id, $can
     }
 }
 
-// --- Rutas básicas para la aplicación (ejemplos) ---
+// --- Inicio del HTML y CSS Interno ---
+echo '<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banco Simple</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+        }
+        h1, h2 {
+            color: #0056b3;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        p {
+            margin-bottom: 10px;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        form {
+            margin-top: 20px;
+            border: 1px solid #eee;
+            padding: 20px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        input[type="text"], input[type="submit"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        input[type="submit"] {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        input[type="submit"]:hover {
+            background-color: #218838;
+        }
+        .error-message {
+            color: #dc3545;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            border: 1px solid #dc3545;
+            background-color: #f8d7da;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+';
+
+// Si hubo un error en la conexión a la base de datos, lo mostramos primero
+if (isset($db_error_message)) {
+    echo '<div class="error-message">' . htmlspecialchars($db_error_message) . '</div>';
+}
+
+
+// --- Rutas básicas para la aplicación ---
 
 // Página principal
 if ($_SERVER['REQUEST_URI'] === '/' || $_SERVER['REQUEST_URI'] === '/index.php') {
     echo "<h1>Bienvenido al Banco Simple</h1>";
     echo "<p>Esta es una simulación de una aplicación bancaria sencilla.</p>";
-    echo "<p><a href='/saldo?cuenta=1'>Ver Saldo de la Cuenta 1</a></p>";
-    echo "<p><a href='/transferir'>Realizar Transferencia</a></p>";
-    exit();
+    if ($pdo) { // Solo muestra los enlaces si hay conexión a DB
+        echo "<p><a href='/saldo?cuenta=1'>Ver Saldo de la Cuenta 1</a></p>";
+        echo "<p><a href='/transferir'>Realizar Transferencia</a></p>";
+    } else {
+         echo "<p>La funcionalidad de la base de datos está actualmente inactiva.</p>";
+    }
 }
 
 // Ver saldo
-if (strpos($_SERVER['REQUEST_URI'], '/saldo') === 0) {
-    $cuenta_id = isset($_GET['cuenta']) ? $_GET['cuenta'] : null;
+else if (strpos($_SERVER['REQUEST_URI'], '/saldo') === 0) {
     echo "<h2>Ver Saldo</h2>";
-    if ($cuenta_id) {
-        $saldo = obtenerSaldo($pdo, $cuenta_id);
-        if ($saldo !== false) {
-            echo "<p>Saldo de la Cuenta " . htmlspecialchars($cuenta_id) . ": $" . htmlspecialchars($saldo) . "</p>";
+    if ($pdo) {
+        $cuenta_id = isset($_GET['cuenta']) ? $_GET['cuenta'] : null;
+        if ($cuenta_id) {
+            $saldo = obtenerSaldo($pdo, $cuenta_id);
+            if ($saldo !== false) {
+                echo "<p>Saldo de la Cuenta " . htmlspecialchars($cuenta_id) . ": <strong>$" . htmlspecialchars(number_format($saldo, 2)) . "</strong></p>";
+            } else {
+                echo "<p>Cuenta " . htmlspecialchars($cuenta_id) . " no encontrada.</p>";
+            }
         } else {
-            echo "<p>Cuenta " . htmlspecialchars($cuenta_id) . " no encontrada.</p>";
+            echo "<p>Por favor, especifique un número de cuenta en la URL (ej: /saldo?cuenta=1).</p>";
         }
     } else {
-        echo "<p>Por favor, especifique un número de cuenta en la URL (ej: /saldo?cuenta=1).</p>";
+        echo "<p>No se puede consultar el saldo. No hay conexión a la base de datos.</p>";
     }
     echo "<p><a href='/'>Volver al inicio</a></p>";
-    exit();
 }
 
 // Formulario para realizar transferencia
-if ($_SERVER['REQUEST_URI'] === '/transferir') {
+else if ($_SERVER['REQUEST_URI'] === '/transferir') {
     echo "<h2>Realizar Transferencia</h2>";
-    echo "<form method='POST' action='/procesar_transferencia'>";
-    echo "Cuenta de origen: <input type='text' name='origen'><br>";
-    echo "Cuenta de destino: <input type='text' name='destino'><br>";
-    echo "Cantidad: <input type='text' name='cantidad'><br>";
-    echo "<input type='submit' value='Transferir'>";
-    echo "</form>";
+    if ($pdo) {
+        echo "<form method='POST' action='/procesar_transferencia'>";
+        echo "Cuenta de origen: <input type='text' name='origen'><br>";
+        echo "Cuenta de destino: <input type='text' name='destino'><br>";
+        echo "Cantidad: <input type='text' name='cantidad'><br>";
+        echo "<input type='submit' value='Transferir'>";
+        echo "</form>";
+    } else {
+        echo "<p>No se pueden realizar transferencias. No hay conexión a la base de datos.</p>";
+    }
     echo "<p><a href='/'>Volver al inicio</a></p>";
-    exit();
 }
 
 // Procesar la transferencia
-if ($_SERVER['REQUEST_URI'] === '/procesar_transferencia' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+else if ($_SERVER['REQUEST_URI'] === '/procesar_transferencia' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     echo "<h2>Procesando Transferencia</h2>";
-    $origen = isset($_POST['origen']) ? $_POST['origen'] : null;
-    $destino = isset($_POST['destino']) ? $_POST['destino'] : null;
-    $cantidad = isset($_POST['cantidad']) ? floatval($_POST['cantidad']) : 0;
+    if ($pdo) {
+        $origen = isset($_POST['origen']) ? $_POST['origen'] : null;
+        $destino = isset($_POST['destino']) ? $_POST['destino'] : null;
+        $cantidad = isset($_POST['cantidad']) ? floatval($_POST['cantidad']) : 0;
 
-    if ($origen && $destino && $cantidad > 0) {
-        $resultado = realizarTransferencia($pdo, $origen, $destino, $cantidad);
-        echo "<p>" . htmlspecialchars($resultado) . "</p>";
+        if ($origen && $destino && $cantidad > 0) {
+            $resultado = realizarTransferencia($pdo, $origen, $destino, $cantidad);
+            echo "<p><strong>" . htmlspecialchars($resultado) . "</strong></p>";
+        } else {
+            echo "<p>Por favor, complete todos los campos correctamente y asegúrese de que la cantidad sea positiva.</p>";
+        }
     } else {
-        echo "<p>Por favor, complete todos los campos correctamente.</p>";
+        echo "<p>No se pudo procesar la transferencia. No hay conexión a la base de datos.</p>";
     }
     echo "<p><a href='/'>Volver al inicio</a></p>";
-    exit();
 }
 
 // Si no coincide ninguna ruta
-http_response_code(404);
-echo "Página no encontrada.";
+else {
+    http_response_code(404);
+    echo "<h2>Página no encontrada</h2>";
+    echo "<p>La ruta que intentaste acceder no existe. <a href='/'>Volver al inicio</a></p>";
+}
+
+echo '
+    </div>
+</body>
+</html>
+';
 
 ?>
