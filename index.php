@@ -4,21 +4,23 @@
 $db_host = 'TU_DIRECCION_IP_RDS';
 $db_name = 'nombre_de_la_base_de_datos';
 $db_user = 'nombre_de_usuario_bd';
-$db_pass = 'contraseña_bd'; 
+$db_pass = 'contraseña_bd';
+
+// Nombre del banco y color corporativo
+$bank_name = "Bankinclán";
+$corporate_blue = "#0056b3"; // Un tono de azul oscuro para el corporativo
 
 $pdo = null; // Inicializar PDO a null
 try {
     $pdo = new PDO("mysql:host=$db_host;dbname=$db_name;charset=utf8", $db_user, $db_pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    // Error
     $db_error_message = "Error al conectar a la base de datos: " . $e->getMessage();
 }
 
-// Funciones del banco
-
+// Funciones básicas del banco
 function obtenerSaldo($pdo, $cuenta_id) {
-    if (!$pdo) return false; // Si PDO no se conectó, no intentes DB ops
+    if (!$pdo) return false;
     $stmt = $pdo->prepare("SELECT saldo FROM cuentas WHERE id = :id");
     $stmt->bindParam(':id', $cuenta_id);
     $stmt->execute();
@@ -27,10 +29,9 @@ function obtenerSaldo($pdo, $cuenta_id) {
 }
 
 function realizarTransferencia($pdo, $cuenta_origen_id, $cuenta_destino_id, $cantidad) {
-    if (!$pdo) return "Error: No hay conexión a la base de datos."; // Si PDO no se conectó
+    if (!$pdo) return "Error: No hay conexión a la base de datos.";
     $pdo->beginTransaction();
     try {
-        // Verificar si las cuentas existen
         $stmt_existe_origen = $pdo->prepare("SELECT id FROM cuentas WHERE id = :id");
         $stmt_existe_origen->bindParam(':id', $cuenta_origen_id);
         $stmt_existe_origen->execute();
@@ -41,23 +42,19 @@ function realizarTransferencia($pdo, $cuenta_origen_id, $cuenta_destino_id, $can
         $stmt_existe_destino->execute();
         if (!$stmt_existe_destino->fetch()) return "Cuenta de destino inválida.";
 
-        // Verificar saldo suficiente
         $saldo_origen = obtenerSaldo($pdo, $cuenta_origen_id);
         if ($saldo_origen === false || $saldo_origen < $cantidad) return "Saldo insuficiente.";
 
-        // Debitar de la cuenta de origen
         $stmt_origen = $pdo->prepare("UPDATE cuentas SET saldo = saldo - :cantidad WHERE id = :id");
         $stmt_origen->bindParam(':cantidad', $cantidad);
         $stmt_origen->bindParam(':id', $cuenta_origen_id);
         $stmt_origen->execute();
 
-        // Acreditar en la cuenta de destino
         $stmt_destino = $pdo->prepare("UPDATE cuentas SET saldo = saldo + :cantidad WHERE id = :id");
         $stmt_destino->bindParam(':cantidad', $cantidad);
         $stmt_destino->bindParam(':id', $cuenta_destino_id);
         $stmt_destino->execute();
 
-        // Registrar la transacción
         $stmt_transaccion = $pdo->prepare("INSERT INTO transacciones (cuenta_origen_id, cuenta_destino_id, cantidad, fecha) VALUES (:origen, :destino, :cantidad, NOW())");
         $stmt_transaccion->bindParam(':origen', $cuenta_origen_id);
         $stmt_transaccion->bindParam(':destino', $cuenta_destino_id);
@@ -73,13 +70,13 @@ function realizarTransferencia($pdo, $cuenta_origen_id, $cuenta_destino_id, $can
     }
 }
 
-// --- Inicio del HTML y CSS Interno ---
+// --- HTML y CSS Interno ---
 echo '<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Banco Simple</title>
+    <title>' . htmlspecialchars($bank_name) . '</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -102,16 +99,33 @@ echo '<!DOCTYPE html>
             max-width: 600px;
             margin-top: 20px;
         }
-        h1, h2 {
-            color: #0056b3;
+        /* Estilos para el nombre del banco */
+        .main-title {
+            color: ' . htmlspecialchars($corporate_blue) . ';
+            text-align: center;
+            font-size: 3.5em; /* Tamaño grande para la página principal */
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2); /* Sombra para que destaque */
+        }
+        .subpage-header {
+            color: ' . htmlspecialchars($corporate_blue) . ';
+            text-align: center;
+            font-size: 1.8em; /* Tamaño más pequeño para las subpáginas */
+            margin-bottom: 20px;
+        }
+        /* Estilos generales para otros encabezados */
+        h2 {
+            color: #333; /* Un gris oscuro para los subtítulos */
             text-align: center;
             margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
         }
         p {
             margin-bottom: 10px;
         }
         a {
-            color: #007bff;
+            color: ' . htmlspecialchars($corporate_blue) . '; /* Enlaces en color corporativo */
             text-decoration: none;
         }
         a:hover {
@@ -133,7 +147,7 @@ echo '<!DOCTYPE html>
             box-sizing: border-box;
         }
         input[type="submit"] {
-            background-color: #28a745;
+            background-color: #28a745; /* Verde para el botón de acción */
             color: white;
             border: none;
             cursor: pointer;
@@ -164,13 +178,11 @@ if (isset($db_error_message)) {
 }
 
 
-// --- Rutas básicas para la aplicación ---
-
 // Página principal
 if ($_SERVER['REQUEST_URI'] === '/' || $_SERVER['REQUEST_URI'] === '/index.php') {
-    echo "<h1>Bienvenido al Banco Simple</h1>";
+    echo '<h1 class="main-title">' . htmlspecialchars($bank_name) . '</h1>'; // Título grande
     echo "<p>Esta es una simulación de una aplicación bancaria sencilla.</p>";
-    if ($pdo) { // Solo muestra los enlaces si hay conexión a DB
+    if ($pdo) {
         echo "<p><a href='/saldo?cuenta=1'>Ver Saldo de la Cuenta 1</a></p>";
         echo "<p><a href='/transferir'>Realizar Transferencia</a></p>";
     } else {
@@ -180,6 +192,7 @@ if ($_SERVER['REQUEST_URI'] === '/' || $_SERVER['REQUEST_URI'] === '/index.php')
 
 // Ver saldo
 else if (strpos($_SERVER['REQUEST_URI'], '/saldo') === 0) {
+    echo '<h1 class="subpage-header">' . htmlspecialchars($bank_name) . '</h1>'; // Título más pequeño
     echo "<h2>Ver Saldo</h2>";
     if ($pdo) {
         $cuenta_id = isset($_GET['cuenta']) ? $_GET['cuenta'] : null;
@@ -201,6 +214,7 @@ else if (strpos($_SERVER['REQUEST_URI'], '/saldo') === 0) {
 
 // Formulario para realizar transferencia
 else if ($_SERVER['REQUEST_URI'] === '/transferir') {
+    echo '<h1 class="subpage-header">' . htmlspecialchars($bank_name) . '</h1>'; // Título más pequeño
     echo "<h2>Realizar Transferencia</h2>";
     if ($pdo) {
         echo "<form method='POST' action='/procesar_transferencia'>";
@@ -217,6 +231,7 @@ else if ($_SERVER['REQUEST_URI'] === '/transferir') {
 
 // Procesar la transferencia
 else if ($_SERVER['REQUEST_URI'] === '/procesar_transferencia' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    echo '<h1 class="subpage-header">' . htmlspecialchars($bank_name) . '</h1>'; // Título más pequeño
     echo "<h2>Procesando Transferencia</h2>";
     if ($pdo) {
         $origen = isset($_POST['origen']) ? $_POST['origen'] : null;
@@ -238,6 +253,7 @@ else if ($_SERVER['REQUEST_URI'] === '/procesar_transferencia' && $_SERVER['REQU
 // Si no coincide ninguna ruta
 else {
     http_response_code(404);
+    echo '<h1 class="subpage-header">' . htmlspecialchars($bank_name) . '</h1>'; // Título más pequeño
     echo "<h2>Página no encontrada</h2>";
     echo "<p>La ruta que intentaste acceder no existe. <a href='/'>Volver al inicio</a></p>";
 }
@@ -245,6 +261,10 @@ else {
 echo '
     </div>
 </body>
+</html>
+';
+
+?>
 </html>
 ';
 
