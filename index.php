@@ -8,7 +8,7 @@ $db_pass = 'contraseña_bd';
 
 // Nombre del banco y color corporativo
 $bank_name = "Bankinclán";
-$corporate_blue = "#0056b3"; // Un tono de azul oscuro para el corporativo
+$corporate_blue = "#0056b3";
 
 $pdo = null; // Inicializar PDO a null
 try {
@@ -166,9 +166,8 @@ echo '<!DOCTYPE html>
             border-radius: 5px;
             margin-bottom: 20px;
         }
-        /* NUEVO: Estilos para el mensaje de éxito */
         .success-message {
-            color: #28a745; /* Verde oscuro */
+            color: #28a745;
             font-weight: bold;
             text-align: center;
             padding: 10px;
@@ -183,7 +182,7 @@ echo '<!DOCTYPE html>
     <div class="container">
 ';
 
-// Si hubo un error en la conexión a la base de datos, lo mostramos primero
+// Error en la conexión a la base de datos
 if (isset($db_error_message)) {
     echo '<div class="error-message">' . htmlspecialchars($db_error_message) . '</div>';
 }
@@ -197,7 +196,7 @@ if ($_SERVER['REQUEST_URI'] === '/' || $_SERVER['REQUEST_URI'] === '/index.php')
         echo "<p><a href='/saldo?cuenta=1'>Ver Saldo de la Cuenta 1</a></p>";
         echo "<p><a href='/transferir'>Realizar Transferencia</a></p>";
     } else {
-         echo "<p>La funcionalidad de la base de datos está actualmente inactiva.</p>";
+         echo "<p>La base de datos está actualmente inactiva.</p>";
     }
 }
 
