@@ -166,6 +166,17 @@ echo '<!DOCTYPE html>
             border-radius: 5px;
             margin-bottom: 20px;
         }
+        /* NUEVO: Estilos para el mensaje de éxito */
+        .success-message {
+            color: #28a745; /* Verde oscuro */
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            border: 1px solid #28a745;
+            background-color: #d4edda; /* Verde claro */
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -240,7 +251,13 @@ else if ($_SERVER['REQUEST_URI'] === '/procesar_transferencia' && $_SERVER['REQU
 
         if ($origen && $destino && $cantidad > 0) {
             $resultado = realizarTransferencia($pdo, $origen, $destino, $cantidad);
-            echo "<p><strong>" . htmlspecialchars($resultado) . "</strong></p>";
+
+            // AQUÍ ESTÁ EL CAMBIO SOLICITADO
+            if ($resultado === "Transferencia realizada con éxito.") {
+                echo "<div class='success-message'>" . htmlspecialchars($resultado) . "</div>";
+            } else {
+                echo "<div class='error-message'>" . htmlspecialchars($resultado) . "</div>";
+            }
         } else {
             echo "<p>Por favor, complete todos los campos correctamente y asegúrese de que la cantidad sea positiva.</p>";
         }
@@ -261,10 +278,6 @@ else {
 echo '
     </div>
 </body>
-</html>
-';
-
-?>
 </html>
 ';
 
