@@ -181,7 +181,7 @@ if (isset($db_error_message)) {
 // Página principal
 if ($_SERVER['REQUEST_URI'] === '/' || $_SERVER['REQUEST_URI'] === '/index.php') {
     echo '<h1 class="main-title">' . htmlspecialchars($bank_name) . '</h1>'; // Título grande
-    echo "<p>Esta es una simulación de una aplicación bancaria sencilla.</p>";
+    echo "<p>Simplicidad financiera, confianza azul.</p>";
     if ($pdo) {
         echo "<p><a href='/saldo?cuenta=1'>Ver Saldo de la Cuenta 1</a></p>";
         echo "<p><a href='/transferir'>Realizar Transferencia</a></p>";
